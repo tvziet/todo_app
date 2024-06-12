@@ -61,7 +61,6 @@ async def read_all(current_user: user_dependency, db: db_dependency):
     check_current_user(current_user)
     current_user_id = current_user.get('user_id')
     todos_for_current_user = db.query(Todos).filter(Todos.owner_id == current_user_id).all()
-    return todos_for_current_user
 
 
 @router.get('/todos/{todo_id}', status_code=status.HTTP_200_OK)
