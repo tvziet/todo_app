@@ -50,8 +50,11 @@ async def read_all(current_user: user_dependency, db: db_dependency):
 
 
 @router.get('/todos/{todo_id}', status_code=status.HTTP_200_OK)
-async def read_todo(db: db_dependency, todo_id: int = Path(gt=0)):
-    todo = db.query(Todos).filter(Todos.id == todo_id).first()
+async def read_todo(current_user: user_dependency,db: db_dependency, todo_id: int = Path(gt=0)):
+    if current_user is None:
+        raise HTTPException(status_code=401, detail='Authentication Failed')
+    todo = db.query(Todos).filter(Todos.id == todo_id)\
+        .filter(Todos.owner_id == current_user.get('user_id')).first()
     if todo is not None:
         return todo
     raise HTTPException(status_code=404, detail='The todo was not found!')
