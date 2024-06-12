@@ -70,14 +70,18 @@ async def create_todo(current_user: user_dependency, db: db_dependency, new_todo
 
 
 @router.put('/todos/{todo_id}', status_code=status.HTTP_204_NO_CONTENT)
-async def update_todo(db: db_dependency, updated_todo: TodoRequest, todo_id: int = Path(gt=0)):
-    todo = db.query(Todos).filter(Todos.id == todo_id).first()
+async def update_todo(current_user: user_dependency,db: db_dependency, updated_todo: TodoRequest, todo_id: int = Path(gt=0)):
+    if current_user is None:
+        raise HTTPException(status_code=401, detail='Authentication Failed')
+    todo = db.query(Todos).filter(Todos.id == todo_id) \
+        .filter(Todos.owner_id == current_user.get('user_id')).first()
     if todo is None:
         raise HTTPException(status_code=404, detail='The todo was not found!')
     todo.title = updated_todo.title
     todo.description = updated_todo.description
     todo.priority = updated_todo.priority
     todo.complete = updated_todo.complete
+    todo.owner_id = current_user.get('user_id')
 
     db.add(todo)
     db.commit()
