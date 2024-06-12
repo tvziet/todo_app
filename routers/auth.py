@@ -14,6 +14,7 @@ from database import SessionLocal
 from models import Users
 
 router = APIRouter(
+    prefix='/auth',
     tags=['auth']
 )
 
@@ -99,8 +100,8 @@ def generate_access_token(username: str, user_id: int, expires_delta: timedelta)
     return jwt.encode(encode, SECRET_KEY, algorithm=ALGORITHM)
 
 
-@router.post('/register', status_code=status.HTTP_201_CREATED)
-async def register(db: db_dependency, new_user: CreateUserRequest):
+@router.post('/', status_code=status.HTTP_201_CREATED)
+async def create_user(db: db_dependency, new_user: CreateUserRequest):
     user_model = Users(
         username=new_user.username,
         email=new_user.email,
@@ -114,8 +115,8 @@ async def register(db: db_dependency, new_user: CreateUserRequest):
     db.commit()
 
 
-@router.post('/login', response_model=Token)
-async def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()], db: db_dependency):
+@router.post('/token', response_model=Token)
+async def login_for_access_token(form_data: Annotated[OAuth2PasswordRequestForm, Depends()], db: db_dependency):
     current_user = authenticate_user(form_data.username, form_data.password, db)
     if not current_user:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
