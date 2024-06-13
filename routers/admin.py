@@ -1,6 +1,7 @@
 from typing import Annotated
 
 from pydantic import BaseModel
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 from starlette import status
 
@@ -44,14 +45,20 @@ def check_admin_user(current_user):
         raise HTTPException(status_code=401, detail='Authentication Failed')
 
 
-@router.get('/todos', name='Get all todos on admin interface', status_code=status.HTTP_200_OK, response_model=Page[TodoOut])
-async def read_all(current_user: user_dependency, db: db_dependency):
+@router.get('/todos', name='Get all todos on admin interface', status_code=status.HTTP_200_OK,
+            response_model=Page[TodoOut])
+async def read_all(current_user: user_dependency, db: db_dependency, q: str | None = None):
     check_admin_user(current_user)
-    todos = db.query(Todos).all()
-    return paginate(todos)
+    query = db.query(Todos)
+    if q:
+        query = query.filter(or_(Todos.title.like(f"%{q}%"), Todos.description.like(f"%{q}%")))
+    todos = query.all()
+    result = paginate(todos)
+    return result
 
 
-@router.delete('/todos/{todo_id}', name='Delete a specific todo on admin interface', status_code=status.HTTP_204_NO_CONTENT)
+@router.delete('/todos/{todo_id}', name='Delete a specific todo on admin interface',
+               status_code=status.HTTP_204_NO_CONTENT)
 async def delete_todo(current_user: user_dependency, db: db_dependency, todo_id: int = Path(gt=0)):
     check_admin_user(current_user)
     todo = db.query(Todos).filter(Todos.id == todo_id).first()

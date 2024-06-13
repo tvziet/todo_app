@@ -1,6 +1,7 @@
 from fastapi import Depends, HTTPException, Path, APIRouter
 from fastapi_pagination import Page, paginate
 from pydantic import BaseModel, Field
+from sqlalchemy import or_
 
 from database import SessionLocal
 from typing import Annotated
@@ -66,12 +67,19 @@ def get_todo_by_owner_id_and_id(db, todo_model, todo_id, current_user):
     return todo
 
 
+def filter_todos(todos, query):
+    return todos.filter(or_(Todos.title.like(f"%{query}%"), Todos.description.like(f"%{query}%")))
+
+
 @router.get('/', name='Get all the todos of the current user', response_model=Page[TodoOut])
-async def read_all(current_user: user_dependency, db: db_dependency):
+async def read_all(current_user: user_dependency, db: db_dependency, q: str | None = None):
     check_current_user(current_user)
     current_user_id = current_user.get('user_id')
-    todos_for_current_user = db.query(Todos).filter(Todos.owner_id == current_user_id).all()
-    return paginate(todos_for_current_user)
+    todos_for_current_user = db.query(Todos).filter(Todos.owner_id == current_user_id)
+    if q:
+        todos_for_current_user = filter_todos(todos_for_current_user, q)
+    result = paginate(todos_for_current_user.all())
+    return result
 
 
 @router.get('/todos/{todo_id}', name='Get the detail of the todo of the current user', status_code=status.HTTP_200_OK)
