@@ -11,6 +11,11 @@ app = FastAPI()
 models.Base.metadata.create_all(bind=engine)
 
 
+@app.get('/healthy')
+def health_check():
+    return {'status': 'Healthy'}
+
+
 # Need to add pagination to all app
 add_pagination(app)
 
