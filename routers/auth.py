@@ -54,6 +54,7 @@ class CreateUserRequest(BaseModel):
     password: str
     role: Role
     is_active: bool
+    phone_number: str
 
     class Config:
         json_schema_extra = {
@@ -64,7 +65,8 @@ class CreateUserRequest(BaseModel):
                 'last_name': 'Thanh Viet',
                 'password': 'p@ssw0rd',
                 'role': 'user',
-                'is_active': True
+                'is_active': True,
+                'phone_number': '0987654321'
             }
         }
 
@@ -110,7 +112,8 @@ async def create_user(db: db_dependency, new_user: CreateUserRequest):
         last_name=new_user.last_name,
         hashed_password=bcrypt_context.hash(new_user.password),
         role=new_user.role,
-        is_active=new_user.is_active
+        is_active=new_user.is_active,
+        phone_number=new_user.phone_number
     )
     db.add(user_model)
     db.commit()
