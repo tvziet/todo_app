@@ -101,7 +101,7 @@ def generate_access_token(username: str, user_id: int, role: str, expires_delta:
     return jwt.encode(encode, SECRET_KEY, algorithm=ALGORITHM)
 
 
-@router.post('/', status_code=status.HTTP_201_CREATED)
+@router.post('/', name='Generate an new user', status_code=status.HTTP_201_CREATED)
 async def create_user(db: db_dependency, new_user: CreateUserRequest):
     user_model = Users(
         username=new_user.username,
@@ -116,7 +116,7 @@ async def create_user(db: db_dependency, new_user: CreateUserRequest):
     db.commit()
 
 
-@router.post('/token', response_model=Token)
+@router.post('/token', name='Generate token when user login', response_model=Token)
 async def login_for_access_token(form_data: Annotated[OAuth2PasswordRequestForm, Depends()], db: db_dependency):
     current_user = authenticate_user(form_data.username, form_data.password, db)
     if not current_user:

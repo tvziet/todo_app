@@ -62,14 +62,14 @@ def check_current_user(current_user):
         raise HTTPException(status_code=401, detail='Authentication Failed')
 
 
-@router.get('/me', status_code=status.HTTP_200_OK)
+@router.get('/me', name='Get the current user', status_code=status.HTTP_200_OK)
 async def me(current_user: user_dependency, db: db_dependency):
     check_current_user(current_user)
     current_user_id = current_user.get('user_id')
     return db.query(Users).filter(Users.id == current_user_id).first()
 
 
-@router.put('/update_password', status_code=status.HTTP_204_NO_CONTENT)
+@router.put('/update_password', name='Update the password of the current user', status_code=status.HTTP_204_NO_CONTENT)
 async def update_password(current_user: user_dependency, db: db_dependency, user_verification: UserVerification):
     check_current_user(current_user)
     current_user_id = current_user.get('user_id')
