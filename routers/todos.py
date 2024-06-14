@@ -85,7 +85,7 @@ async def read_all(current_user: user_dependency, db: db_dependency, q: str | No
 @router.get('/todos/{todo_id}', name='Get the detail of the todo of the current user', status_code=status.HTTP_200_OK)
 async def read_todo(current_user: user_dependency, db: db_dependency, todo_id: int = Path(gt=0)):
     check_current_user(current_user)
-    get_todo_by_owner_id_and_id(db, Todos, todo_id, current_user)
+    return get_todo_by_owner_id_and_id(db, Todos, todo_id, current_user)
 
 
 @router.post('/todos/', name='Create new todo', status_code=status.HTTP_201_CREATED)
