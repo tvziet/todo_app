@@ -2,7 +2,7 @@ from datetime import timedelta, datetime, timezone
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 from starlette import status
 from enum import Enum
@@ -51,7 +51,7 @@ class CreateUserRequest(BaseModel):
     email: str
     first_name: str
     last_name: str
-    password: str
+    password: str = Field(min_length=6)
     role: Role
     is_active: bool
     phone_number: str
@@ -105,6 +105,9 @@ def generate_access_token(username: str, user_id: int, role: str, expires_delta:
 
 @router.post('/', name='Generate an new user', status_code=status.HTTP_201_CREATED)
 async def create_user(db: db_dependency, new_user: CreateUserRequest):
+    user = db.query(Users).filter(Users.username == new_user.username).first()
+    if user is not None:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail='The user is exists!')
     user_model = Users(
         username=new_user.username,
         email=new_user.email,
