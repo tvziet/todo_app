@@ -1,4 +1,5 @@
 from fastapi import Depends, HTTPException, Path, APIRouter
+from fastapi.responses import JSONResponse
 from fastapi_pagination import Page, paginate
 from pydantic import BaseModel, Field
 from sqlalchemy import or_
@@ -96,7 +97,7 @@ async def create_todo(current_user: user_dependency, db: db_dependency, new_todo
     db.commit()
 
 
-@router.put('/todos/{todo_id}', name='Update the todo of the current user', status_code=status.HTTP_204_NO_CONTENT)
+@router.put('/todos/{todo_id}', name='Update the todo of the current user')
 async def update_todo(current_user: user_dependency, db: db_dependency,
                       updated_todo: TodoRequest, todo_id: int = Path(gt=0)):
     check_current_user(current_user)
@@ -109,11 +110,13 @@ async def update_todo(current_user: user_dependency, db: db_dependency,
 
     db.add(todo)
     db.commit()
+    return JSONResponse(content={'message': 'The todo was updated successfully!'})
 
 
-@router.delete('/todos/{todo_id}', name='Delete a todo of the current user', status_code=status.HTTP_204_NO_CONTENT)
+@router.delete('/todos/{todo_id}', name='Delete a todo of the current user')
 async def delete_todo(current_user: user_dependency, db: db_dependency, todo_id: int = Path(gt=0)):
     check_current_user(current_user)
     todo = get_todo_by_owner_id_and_id(db, Todos, todo_id, current_user)
     db.delete(todo)
     db.commit()
+    return JSONResponse(content={'message': 'The todo was deleted successfully!'})
