@@ -3,6 +3,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 from starlette import status
 from enum import Enum
@@ -105,7 +106,7 @@ def generate_access_token(username: str, user_id: int, role: str, expires_delta:
 
 @router.post('/', name='Generate an new user', status_code=status.HTTP_201_CREATED)
 async def create_user(db: db_dependency, new_user: CreateUserRequest):
-    user = db.query(Users).filter(Users.username == new_user.username).first()
+    user = db.query(Users).filter(or_(Users.username == new_user.username, Users.email == new_user.email)).first()
     if user is not None:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail='The user is exists!')
     user_model = Users(
