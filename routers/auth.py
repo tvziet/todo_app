@@ -1,7 +1,7 @@
 from datetime import timedelta, datetime, timezone
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Body
 from pydantic import BaseModel, Field
 from sqlalchemy import or_
 from sqlalchemy.orm import Session
@@ -46,6 +46,10 @@ class Token(BaseModel):
     access_token: str
     token_type: str
 
+
+class LoginRequest(BaseModel):
+    username: str
+    password: str
 
 class CreateUserRequest(BaseModel):
     username: str
@@ -123,7 +127,17 @@ async def create_user(db: db_dependency, new_user: CreateUserRequest):
     db.commit()
 
 
-@router.post('/token', name='Generate token when user login', response_model=Token)
+@router.post('/login', name='Generate token when user login', response_model=Token)
+async def login(db: db_dependency, login_request: LoginRequest = Body(...)):
+    current_user = authenticate_user(login_request.username, login_request.password, db)
+    if not current_user:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
+                            detail='Could not validate user')
+    token = generate_access_token(current_user.username, current_user.id, current_user.role, timedelta(minutes=20))
+    return {'access_token': token, 'token_type': 'bearer'}
+
+
+@router.post('/token', name='Generate token when user login', response_model=Token, include_in_schema=False)
 async def login_for_access_token(form_data: Annotated[OAuth2PasswordRequestForm, Depends()], db: db_dependency):
     current_user = authenticate_user(form_data.username, form_data.password, db)
     if not current_user:
