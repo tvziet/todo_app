@@ -1,6 +1,7 @@
 from fastapi import Depends, HTTPException, Path, APIRouter
 from fastapi.responses import JSONResponse
 from fastapi_pagination import Page, paginate
+from fastapi.encoders import jsonable_encoder
 from pydantic import BaseModel, Field
 from sqlalchemy import or_
 
@@ -89,12 +90,14 @@ async def read_todo(current_user: user_dependency, db: db_dependency, todo_id: i
     return get_todo_by_owner_id_and_id(db, Todos, todo_id, current_user)
 
 
-@router.post('/todos/', name='Create new todo', status_code=status.HTTP_201_CREATED)
+@router.post('/todos/', response_model=TodoOut, name='Create new todo', status_code=status.HTTP_201_CREATED)
 async def create_todo(current_user: user_dependency, db: db_dependency, new_todo: TodoRequest):
     check_current_user(current_user)
     todo = Todos(**new_todo.model_dump(), owner_id=current_user.get('user_id'))
     db.add(todo)
     db.commit()
+    db.refresh(todo)  # Refresh the instance to get the data as it is in the database, including the generated ID
+    return jsonable_encoder(todo)  # Serialize and return the created todo object
 
 
 @router.put('/todos/{todo_id}', name='Update the todo of the current user')
