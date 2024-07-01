@@ -2,7 +2,7 @@ from datetime import timedelta, datetime, timezone
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Body
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, EmailStr
 from sqlalchemy import or_
 from sqlalchemy.orm import Session
 from starlette import status
@@ -65,7 +65,7 @@ class UserOut(BaseModel):
 
 class CreateUserRequest(BaseModel):
     username: str = Field(description='Must be unique along with the email attribute')
-    email: str = Field(description='Must be unique along with the username attribute')
+    email: EmailStr = Field(..., description='Must be unique along with the username attribute')
     first_name: str
     last_name: str
     password: str = Field(min_length=6)
