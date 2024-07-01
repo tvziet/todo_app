@@ -64,8 +64,8 @@ class UserOut(BaseModel):
 
 
 class CreateUserRequest(BaseModel):
-    username: str
-    email: str
+    username: str = Field(description='Must be unique along with the email attribute')
+    email: str = Field(description='Must be unique along with the username attribute')
     first_name: str
     last_name: str
     password: str = Field(min_length=6)
