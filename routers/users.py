@@ -1,7 +1,8 @@
 from enum import Enum
 from typing import Annotated
 
-from pydantic import BaseModel, Field
+from fastapi.encoders import jsonable_encoder
+from pydantic import BaseModel, Field, EmailStr
 from sqlalchemy.orm import Session
 from starlette import status
 
@@ -25,17 +26,26 @@ class Role(str, Enum):
     user = 'user'
 
 
-class UserVerification(BaseModel):
-    password: str
+class UserUpdateRequest(BaseModel):
+    password: str = Field(description='The current password')
     new_password: str = Field(min_length=6)
+    username: str = Field(description='Must be unique along with the email attribute')
+    email: EmailStr = Field(..., description='Must be unique along with the username attribute')
+    first_name: str
+    last_name: str
+    role: Role
+    phone_number: str
 
-    class Config:
-        json_schema_extra = {
-            'example': {
-                'password': 'p@ssw0rd',
-                'new_password': 'n3wp@ssw0rd'
-            }
-        }
+
+class UserOut(BaseModel):
+    id: int
+    username: str
+    email: str
+    first_name: str
+    last_name: str
+    role: str
+    is_active: bool
+    phone_number: str
 
 
 def get_db():
@@ -62,34 +72,39 @@ def check_current_user(current_user):
         raise HTTPException(status_code=401, detail='Authentication Failed')
 
 
-@router.get('/me', name='Get the current user', status_code=status.HTTP_200_OK)
+@router.get('/me', name='Get the current user', status_code=status.HTTP_200_OK, response_model=UserOut)
 async def me(current_user: user_dependency, db: db_dependency):
     check_current_user(current_user)
     current_user_id = current_user.get('user_id')
     return db.query(Users).filter(Users.id == current_user_id).first()
 
 
-@router.put('/update_password', name='Update the password of the current user', status_code=status.HTTP_204_NO_CONTENT)
-async def update_password(current_user: user_dependency, db: db_dependency, user_verification: UserVerification):
+@router.put('/me/update', name='Update the information of the current user',
+            status_code=status.HTTP_200_OK, response_model=UserOut)
+async def update_user_details(current_user: user_dependency, db: db_dependency, update_model: UserUpdateRequest):
     check_current_user(current_user)
     current_user_id = current_user.get('user_id')
     user = db.query(Users).filter(Users.id == current_user_id).first()
 
-    if not bcrypt_context.verify(user_verification.password, user.hashed_password):
+    if not bcrypt_context.verify(update_model.password, user.hashed_password):
         raise HTTPException(status_code=401, detail='Error on password change')
 
-    user.hashed_password = bcrypt_context.hash(user_verification.new_password)
-    db.add(user)
+    user.hashed_password = bcrypt_context.hash(update_model.new_password)
+
+    # Using a dictionary to map update_models fields to user fields
+    user_attributes = {
+        'phone_number': update_model.phone_number,
+        'role': update_model.role,
+        'username': update_model.username,
+        'first_name': update_model.first_name,
+        'last_name': update_model.last_name,
+        'email': update_model.email
+    }
+
+    # Loop through the dictionary and update the user object
+    for field, value in user_attributes.items():
+        if value:
+            setattr(user, field, value)
     db.commit()
-
-
-@router.put('/update_phone_number', name='Update the phone number of the current user',
-            status_code=status.HTTP_204_NO_CONTENT)
-async def update_phone_number(current_user: user_dependency, db: db_dependency, phone_number: str):
-    check_current_user(current_user)
-    current_user_id = current_user.get('user_id')
-    user = db.query(Users).filter(Users.id == current_user_id).first()
-
-    user.phone_number = phone_number
-    db.add(user)
-    db.commit()
+    db.refresh(user)
+    return jsonable_encoder(user)  # Serialize and return the created user object
