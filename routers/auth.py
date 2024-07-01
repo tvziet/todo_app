@@ -51,6 +51,18 @@ class LoginRequest(BaseModel):
     username: str
     password: str
 
+
+class UserOut(BaseModel):
+    id: int
+    username: str
+    email: str
+    first_name: str
+    last_name: str
+    role: str
+    is_active: bool
+    phone_number: str
+
+
 class CreateUserRequest(BaseModel):
     username: str
     email: str
@@ -108,23 +120,29 @@ def generate_access_token(username: str, user_id: int, role: str, expires_delta:
     return jwt.encode(encode, SECRET_KEY, algorithm=ALGORITHM)
 
 
-@router.post('/', name='Generate an new user', status_code=status.HTTP_201_CREATED)
+@router.post('/', name='Generate a new user', status_code=status.HTTP_201_CREATED, response_model=UserOut)
 async def create_user(db: db_dependency, new_user: CreateUserRequest):
     user = db.query(Users).filter(or_(Users.username == new_user.username, Users.email == new_user.email)).first()
     if user is not None:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail='The user is exists!')
-    user_model = Users(
-        username=new_user.username,
-        email=new_user.email,
-        first_name=new_user.first_name,
-        last_name=new_user.last_name,
-        hashed_password=bcrypt_context.hash(new_user.password),
-        role=new_user.role,
-        is_active=new_user.is_active,
-        phone_number=new_user.phone_number
-    )
-    db.add(user_model)
-    db.commit()
+    try:
+        user_model = Users(
+            username=new_user.username,
+            email=new_user.email,
+            first_name=new_user.first_name,
+            last_name=new_user.last_name,
+            hashed_password=bcrypt_context.hash(new_user.password),
+            role=new_user.role,
+            is_active=new_user.is_active,
+            phone_number=new_user.phone_number
+        )
+        db.add(user_model)
+        db.commit()
+        db.refresh(user_model)
+        return user_model
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
 
 @router.post('/login', name='Generate token when user login', response_model=Token)
