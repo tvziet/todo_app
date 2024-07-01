@@ -1,4 +1,4 @@
-from typing import Annotated
+from typing import Annotated, Optional
 
 from pydantic import BaseModel
 from sqlalchemy import or_
@@ -11,7 +11,7 @@ from fastapi import APIRouter, Depends, HTTPException, Path
 from fastapi_pagination import Page, paginate
 
 from routers.auth import get_current_user
-from models import Todos
+from models import Todos, Users
 
 router = APIRouter(
     prefix='/admin',
@@ -40,9 +40,25 @@ class TodoOut(BaseModel):
     owner_id: int
 
 
+class UserOut(BaseModel):
+    id: int
+    username: str
+    email: str
+    first_name: str
+    last_name: str
+    role: str
+    is_active: bool
+    phone_number: Optional[str] = None
+
+
 def check_admin_user(current_user):
     if current_user is None or current_user.get('user_role') != 'admin':
         raise HTTPException(status_code=401, detail='Authentication Failed')
+
+
+def filter_users(users, query):
+    return users.filter(
+        or_(Users.first_name.like(f"%{query}%"), Users.last_name.like(f"%{query}%"), Users.username.like(f"%{query}%")))
 
 
 @router.get('/todos', name='Get all todos on admin interface', status_code=status.HTTP_200_OK,
@@ -66,3 +82,15 @@ async def delete_todo(current_user: user_dependency, db: db_dependency, todo_id:
         raise HTTPException(status_code=404, detail='The todo was not found!')
     db.delete(todo)
     db.commit()
+
+
+@router.get('/users', name='Get all the users', response_model=Page[UserOut])
+async def read_all(current_user: user_dependency, db: db_dependency, q: str | None = None):
+    check_admin_user(current_user)
+    users_query = db.query(Users)
+    if q:
+        users = filter_users(users_query, q).all()
+    else:
+        users = users_query.all()
+    result = paginate(users)
+    return result
