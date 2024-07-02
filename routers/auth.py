@@ -106,11 +106,11 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_bearer)]):
         user_role: str = payload.get('role')
         if username is None or user_id is None:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
-                                detail='Could not validate user')
+                                detail=[{'msg': 'Could not validate user'}])
         return {'username': username, 'user_id': user_id, 'user_role': user_role}
     except JWTError:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
-                            detail='Could not validate user')
+                            detail=[{'msg': 'Could not validate user'}])
 
 
 def generate_access_token(username: str, user_id: int, role: str, expires_delta: timedelta):
@@ -124,7 +124,7 @@ def generate_access_token(username: str, user_id: int, role: str, expires_delta:
 async def create_user(db: db_dependency, new_user: CreateUserRequest):
     user = db.query(Users).filter(or_(Users.username == new_user.username, Users.email == new_user.email)).first()
     if user is not None:
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail='The user is exists!')
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=[{'msg': 'The user is exists!'}])
     try:
         user_model = Users(
             username=new_user.username,
@@ -150,7 +150,7 @@ async def login(db: db_dependency, login_request: LoginRequest = Body(...)):
     current_user = authenticate_user(login_request.username, login_request.password, db)
     if not current_user:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
-                            detail='Could not validate user')
+                            detail=[{'msg': 'Could not validate user'}])
     token = generate_access_token(current_user.username, current_user.id, current_user.role, timedelta(minutes=20))
     return {'access_token': token, 'token_type': 'bearer'}
 
@@ -160,6 +160,6 @@ async def login_for_access_token(form_data: Annotated[OAuth2PasswordRequestForm,
     current_user = authenticate_user(form_data.username, form_data.password, db)
     if not current_user:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
-                            detail='Could not validate user')
+                            detail=[{'msg': 'Could not validate user'}])
     token = generate_access_token(current_user.username, current_user.id, current_user.role, timedelta(minutes=20))
     return {'access_token': token, 'token_type': 'bearer'}

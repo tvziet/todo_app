@@ -53,7 +53,7 @@ class UserOut(BaseModel):
 
 def check_admin_user(current_user):
     if current_user is None or current_user.get('user_role') != 'admin':
-        raise HTTPException(status_code=401, detail='Authentication Failed')
+        raise HTTPException(status_code=403, detail=[{'msg': 'You can not perform this action!'}])
 
 
 def filter_users(users, query):
@@ -79,7 +79,7 @@ async def delete_todo(current_user: user_dependency, db: db_dependency, todo_id:
     check_admin_user(current_user)
     todo = db.query(Todos).filter(Todos.id == todo_id).first()
     if todo is None:
-        raise HTTPException(status_code=404, detail='The todo was not found!')
+        raise HTTPException(status_code=404, detail=[{'msg': 'The todo was not found!'}])
     db.delete(todo)
     db.commit()
 

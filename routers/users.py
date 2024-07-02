@@ -63,13 +63,13 @@ user_dependency = Annotated[dict, Depends(get_current_user)]
 def get_current_user_from_db(current_username, db):
     current_user_from_db = db.query(Users).filter(Users.username == current_username).first()
     if current_user_from_db is None:
-        raise HTTPException(status_code=404, detail='The user was not found')
+        raise HTTPException(status_code=404, detail=[{'msg': 'The user was not found'}])
     return current_user_from_db
 
 
 def check_current_user(current_user):
     if current_user is None:
-        raise HTTPException(status_code=401, detail='Authentication Failed')
+        raise HTTPException(status_code=401, detail=[{'msg': 'Authentication Failed'}])
 
 
 @router.get('/me', name='Get the current user', status_code=status.HTTP_200_OK, response_model=UserOut)
@@ -87,7 +87,7 @@ async def update_user_details(current_user: user_dependency, db: db_dependency, 
     user = db.query(Users).filter(Users.id == current_user_id).first()
 
     if not bcrypt_context.verify(update_model.password, user.hashed_password):
-        raise HTTPException(status_code=401, detail='Error on password change')
+        raise HTTPException(status_code=401, detail=[{'msg': 'Error on password change'}])
 
     user.hashed_password = bcrypt_context.hash(update_model.new_password)
 

@@ -58,14 +58,14 @@ class TodoOut(BaseModel):
 
 def check_current_user(current_user):
     if current_user is None:
-        raise HTTPException(status_code=401, detail='Authentication Failed')
+        raise HTTPException(status_code=401, detail=[{'msg': 'Authentication Failed'}])
 
 
 def get_todo_by_owner_id_and_id(db, todo_model, todo_id, current_user):
     todo = db.query(todo_model).filter(todo_model.id == todo_id) \
         .filter(todo_model.owner_id == current_user.get('user_id')).first()
     if todo is None:
-        raise HTTPException(status_code=404, detail='The todo was not found!')
+        raise HTTPException(status_code=404, detail=[{'msg': 'The todo was not found!'}])
     return todo
 
 
