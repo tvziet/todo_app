@@ -4,6 +4,7 @@ from pydantic import BaseModel
 from sqlalchemy import or_
 from sqlalchemy.orm import Session
 from starlette import status
+from starlette.responses import JSONResponse
 
 from database import SessionLocal
 from fastapi import APIRouter, Depends, HTTPException, Path
@@ -94,3 +95,14 @@ async def read_all(current_user: user_dependency, db: db_dependency, q: str | No
         users = users_query.all()
     result = paginate(users)
     return result
+
+
+@router.delete('/{user_id}', name='Destroy an user', status_code=status.HTTP_200_OK)
+async def delete_user(current_user: user_dependency, db: db_dependency, user_id: int = Path(gt=0)):
+    check_admin_user(current_user)
+    user = db.query(Users).filter(Users.id == user_id).first()
+    if user is None:
+        raise HTTPException(status_code=404, detail=[{'msg': 'The user was not found'}])
+    db.delete(user)
+    db.commit()
+    return JSONResponse(content={'message': 'The user was deleted successfully!'})

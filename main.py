@@ -21,7 +21,7 @@ class RecordInvalidException(Exception):
 # Custom error handler for Pydantic validation errors
 async def validation_exception_handler(request, exc: RequestValidationError):
     # Transform the Pydantic validation error details into your desired format
-    details = [{'type': error['type'], 'msg': error['msg'], 'field': error['loc'][1].capitalize()} for error in exc.errors()]
+    details = [{'type': error['type'], 'msg': error['msg'], 'field': ' '.join(word.capitalize() for word in error['loc'][1].split('_'))} for error in exc.errors()]
     raise RecordInvalidException(detail=details)
 
 

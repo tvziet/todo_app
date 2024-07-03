@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Annotated
+from typing import Annotated, List
 
 from fastapi.encoders import jsonable_encoder
 from pydantic import BaseModel, Field, EmailStr
@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from starlette import status
 
 from database import SessionLocal
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Path
 from passlib.context import CryptContext
 
 from routers.auth import get_current_user
