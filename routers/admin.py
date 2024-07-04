@@ -96,7 +96,7 @@ async def read_all(current_user: user_dependency, db: db_dependency, q: str | No
     if q:
         users = filter_users(users_query, q).all()
     else:
-        users = users_query.all()
+        users = users_query.filter(Users.id != current_user.get('user_id')).all()
     result = paginate(users)
     return result
 
