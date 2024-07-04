@@ -1,4 +1,4 @@
-from typing import Annotated, Optional
+from typing import Annotated, Optional, List
 
 from pydantic import BaseModel
 from sqlalchemy import or_
@@ -52,6 +52,10 @@ class UserOut(BaseModel):
     phone_number: Optional[str] = None
 
 
+class UserBatchDeleteRequest(BaseModel):
+    user_ids: List[int]
+
+
 def check_admin_user(current_user):
     if current_user is None or current_user.get('user_role') != 'admin':
         raise HTTPException(status_code=403, detail=[{'msg': 'You can not perform this action!'}])
@@ -97,12 +101,28 @@ async def read_all(current_user: user_dependency, db: db_dependency, q: str | No
     return result
 
 
+@router.delete('/users/batch_delete', response_model=dict)
+def delete_users_batch(current_user: user_dependency, db: db_dependency,
+                       user_batch_delete_request: UserBatchDeleteRequest):
+    check_admin_user(current_user)
+    # Exclude the current user's ID from the deletion operation
+    user_ids_to_delete = [user_id for user_id in user_batch_delete_request.user_ids if user_id != current_user.get('user_id')]
+    if not user_ids_to_delete:
+        raise HTTPException(status_code=422, detail=[{'msg': "No user IDs to delete. Ensure the list is not empty and "
+                                                             "does not only contain the current user's ID."}])
+    db.query(Users).filter(Users.id.in_(user_ids_to_delete)).delete(synchronize_session=False)
+    db.commit()
+    return {'user_deleted_ids': user_ids_to_delete}
+
+
 @router.delete('/{user_id}', name='Destroy an user', status_code=status.HTTP_200_OK)
 async def delete_user(current_user: user_dependency, db: db_dependency, user_id: int = Path(gt=0)):
     check_admin_user(current_user)
+    if current_user.get('user_id') == user_id:
+        raise HTTPException(status_code=422, detail=[{'msg': "The user_id params cannot be the current user's ID"}])
     user = db.query(Users).filter(Users.id == user_id).first()
     if user is None:
         raise HTTPException(status_code=404, detail=[{'msg': 'The user was not found'}])
     db.delete(user)
     db.commit()
-    return JSONResponse(content={'message': 'The user was deleted successfully!'})
+    return JSONResponse(content={'msg': 'The user was deleted successfully!'})

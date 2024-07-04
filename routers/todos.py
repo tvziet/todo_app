@@ -113,7 +113,7 @@ async def update_todo(current_user: user_dependency, db: db_dependency,
 
     db.add(todo)
     db.commit()
-    return JSONResponse(content={'message': 'The todo was updated successfully!'})
+    return JSONResponse(content={'msg': 'The todo was updated successfully!'})
 
 
 @router.delete('/todos/{todo_id}', name='Delete a todo of the current user')
@@ -122,4 +122,4 @@ async def delete_todo(current_user: user_dependency, db: db_dependency, todo_id:
     todo = get_todo_by_owner_id_and_id(db, Todos, todo_id, current_user)
     db.delete(todo)
     db.commit()
-    return JSONResponse(content={'message': 'The todo was deleted successfully!'})
+    return JSONResponse(content={'msg': 'The todo was deleted successfully!'})
