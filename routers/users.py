@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Annotated, List
+from typing import Annotated
 
 from fastapi.encoders import jsonable_encoder
 from pydantic import BaseModel, Field, EmailStr
