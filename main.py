@@ -41,7 +41,8 @@ app.add_exception_handler(RecordInvalidException, record_invalid_exception_handl
 
 origins = [
     'http://localhost',
-    'http://localhost:5173'
+    'http://localhost:5173',
+    'https://pj-vue3.vercel.app'
 ]
 
 app.add_middleware(
